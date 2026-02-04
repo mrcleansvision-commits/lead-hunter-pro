@@ -12,7 +12,19 @@ import os
 # from services.maps_scraper import search_businesses
 # from services.enrichment import find_owner_info
 
+import traceback
+from fastapi.responses import JSONResponse
+
 app = FastAPI(title="Lead Finder & Enrichment Tool")
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    error_msg = f"{str(exc)}\\n{traceback.format_exc()}"
+    print(f"CRITICAL SERVER ERROR: {error_msg}")
+    return JSONResponse(
+        status_code=500,
+        content={"status": "error", "message": f"Server Error: {str(exc)}"}
+    )
 
 # Ensure static directories exist for Cloud Deployment
 os.makedirs("static/generated", exist_ok=True)
