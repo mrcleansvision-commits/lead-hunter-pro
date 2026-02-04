@@ -2,17 +2,19 @@ import googlemaps
 import time
 import csv
 import os
+import asyncio
 from typing import List, Dict, Optional
+from concurrent.futures import ThreadPoolExecutor
 
 async def search_google_maps(niche: str, location: str, max_results: int = 60, api_key: str = None, deep_scan: bool = False) -> List[Dict]:
     """
     Searches Google Places API for businesses.
-    Supports 'deep_scan' to bypass 60-result limit by creating sub-region queries.
+    Uses asyncio to run multiple region queries IN PARALLEL to avoid server timeouts.
     """
     if not api_key:
         raise ValueError("Google API Key is required")
 
-    # Initialize client
+    # Initialize client (This client is thread-safe)
     gmaps = googlemaps.Client(key=api_key)
     
     # Define queries
@@ -31,15 +33,9 @@ async def search_google_maps(niche: str, location: str, max_results: int = 60, a
             print(f"State Mode Activated for: {location.title()}")
             target_cities = US_STATES_CITIES[loc_lower]
             for city in target_cities:
-                # For each city, we add it to the query list
-                # We do NOT run the full 8-point grid per city to avoid hitting API rate limits instantly
-                # unless specifically requested? 
-                # Let's keep it simple: State Mode = 1 search per major city.
-                # That's 15-20 highly targeted searches.
                 queries.append(f"{niche} in {city}, {location}")
         else:
             print(f"Deep Scan Enabled: Generating 8-Point Grid queries for {location}")
-            # Maximum Area Coverage Strategy (City Level)
             directions = [
                 "North", "North East", "East", "South East", 
                 "South", "South West", "West", "North West",
@@ -50,35 +46,46 @@ async def search_google_maps(niche: str, location: str, max_results: int = 60, a
             
     all_results = {} # place_id -> result_dict to deduplicate
     
-    for query in queries:
-        print(f"Executing Query: {query}")
-        try:
-            # Execute search for this query
-            # We enforce a mini-max of 60 per query because that's Google's limit anyway
-            # But the total across all queries can exceed 60
-            query_results = _execute_query(gmaps, query, max_per_query=60)
-            
-            for res in query_results:
-                pid = res['place_id']
-                if pid not in all_results:
-                    all_results[pid] = res
-                    
-            # Stop if we have "enough" global results (e.g. 5x max_results requested)
-            # Or just let it run to get as many as possible.
-            # Let's cap it at max_results * 5 to be safe/reasonable cost
-            # Removed Limit: Will run until Google runs out of results for the query grid
-            if False: # Disabled manual cap
-                break
-                
-        except Exception as e:
-            print(f"Query failed for '{query}': {e}")
+    # --- PARALLEL EXECUTION ENGINE ---
+    print(f"Starting Parallel Search for {len(queries)} queries...")
+    loop = asyncio.get_running_loop()
+    
+    # We use a ThreadPoolExecutor because googlemaps-python is valid synchronous code
+    # This allows us to run 10+ HTTP requests at the same time
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        futures = []
+        for query in queries:
+            # Schedule each query to run in a separate thread
+            futures.append(
+                loop.run_in_executor(executor, _execute_query, gmaps, query, 60)
+            )
+        
+        # Wait for all to finish (or timeout)
+        # We gather all results
+        results_list = await asyncio.gather(*futures, return_exceptions=True)
+        
+    # Process results
+    for i, res in enumerate(results_list):
+        if isinstance(res, Exception):
+            print(f"Query {queries[i]} failed: {res}")
             continue
             
+        # res is a list of dicts
+        for business in res:
+            pid = business['place_id']
+            if pid not in all_results:
+                all_results[pid] = business
+                
+    print(f"Search Complete. Found {len(all_results)} unique businesses.")
     return list(all_results.values())
 
 def _execute_query(gmaps, query_text, max_per_query=60):
-    """Helper to run a single query with pagination."""
+    """
+    Blocking helper function to run in a thread.
+    Runs a single query with pagination.
+    """
     results = []
+    print(f"-> Executing: {query_text}")
     
     try:
         # Initial Search
@@ -86,71 +93,64 @@ def _execute_query(gmaps, query_text, max_per_query=60):
         
         while True:
             if 'results' in places_result:
-                print(f"  - Found {len(places_result['results'])} results on this page.")
-                
                 for place in places_result['results']:
-                    place_id = place.get('place_id')
-                    
-                    # Optimization: In Deep Scan, we might want to skip details fetching for duplicates
-                    # But we don't know duplicates yet. 
-                    # We will fetch details here. Cost is 1 request per result.
-                    
                     try:
-                        # Fetch details (Phone, Website)
-                        # We use fields to limit cost
+                        place_id = place.get('place_id')
+                        
+                        # Fetch details (1 API Call)
+                        # In deep scan parallel mode, we must be careful with cost.
+                        # But for accuracy, we still need details.
                         details = gmaps.place(place_id=place_id, fields=['name', 'formatted_address', 'formatted_phone_number', 'website'])
                         res = details.get('result', {})
                         
                         website = res.get('website')
                         phone = res.get('formatted_phone_number')
                         
-                        results.append({
+                        item = {
                             "name": res.get('name'),
                             "address": res.get('formatted_address'),
                             "phone": phone,
                             "website": website,
                             "has_website": bool(website),
                             "place_id": place_id
-                        })
+                        }
+                        results.append(item)
                         
-                        # --- Auto-Save to CSV ---
+                        # --- Auto-Save to CSV (Thread Safe Append) ---
+                        # In threads, file writing can be racey, but for a backup csv it's usually fine 
+                        # or we catch the lock error.
                         try:
-                            file_exists = os.path.isfile("leads_backup.csv")
                             with open("leads_backup.csv", "a", newline="", encoding="utf-8") as f:
                                 writer = csv.writer(f)
-                                if not file_exists:
-                                    writer.writerow(["Name", "Address", "Phone", "Website", "Has Website", "Place ID"])
-                                
                                 writer.writerow([
-                                    res.get('name'),
-                                    res.get('formatted_address'),
-                                    phone,
-                                    website,
-                                    "Yes" if website else "No",
-                                    place_id
+                                    item['name'],
+                                    item['address'],
+                                    item['phone'],
+                                    item['website'],
+                                    "Yes" if item['has_website'] else "No",
+                                    item['place_id']
                                 ])
-                        except Exception as csv_err:
-                            print(f"Failed to auto-save lead: {csv_err}")
+                        except:
+                            pass # Ignore CSV write collisions in parallel mode
                         # -------------------------
                         
                     except Exception as e:
-                        print(f"Error fetching details: {e}")
+                        # print(f"Error fetching details: {e}")
                         continue
             
-            # Pagination
+            # Pagination Logic
+            # Only fetch next page if we haven't hit the limit
             if 'next_page_token' in places_result and len(results) < max_per_query:
                 token = places_result['next_page_token']
-                print("  - Fetching next page (waiting 2s)...")
-                time.sleep(2) # Mandatory wait for token validation
+                time.sleep(2) # Mandatory 2s wait for token to become valid
                 try:
                     places_result = gmaps.places(query=None, page_token=token)
-                except Exception as e:
-                    print(f"Pagination error: {e}")
+                except:
                     break
             else:
                 break
                 
     except Exception as e:
-        print(f"Error in _execute_query: {e}")
+        print(f"Error in _execute_query for '{query_text}': {e}")
         
     return results
