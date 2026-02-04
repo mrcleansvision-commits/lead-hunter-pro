@@ -18,7 +18,12 @@ async def search_google_maps(niche: str, location: str, max_results: int = 60, a
     # Define queries
     queries = [f"{niche} in {location}"]
     if deep_scan:
-        from services.cities import US_STATES_CITIES
+        try:
+            from services.cities import US_STATES_CITIES
+        except ImportError:
+            print("Warning: services.cities not found. State Mode disabled.")
+            US_STATES_CITIES = {} 
+            
         loc_lower = location.lower().strip()
         
         # Check if input is a state

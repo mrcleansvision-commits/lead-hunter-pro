@@ -278,7 +278,10 @@
                         }
                     } catch (error) {
                         console.error('Search failed:', error);
-                        alert('Error connecting to server');
+                        // Try to get more info if it's a fetch response error
+                        let msg = error.message || 'Unknown error';
+                        if (msg.includes('Unexpected token')) msg = 'Server returned a crash report (500 Error). Check Console.';
+                        alert('Search Failed: ' + msg);
                     } finally {
                         this.loading = false;
                     }
