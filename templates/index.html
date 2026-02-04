@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lead Hunter Pro</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Outfit', 'sans-serif'],
+                    },
+                    colors: {
+                        dark: {
+                            900: '#0f172a',
+                            800: '#1e293b',
+                            700: '#334155',
+                        },
+                        primary: {
+                            500: '#6366f1', // Indigo
+                            600: '#4f46e5',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #0f172a;
+            color: #f8fafc;
+        }
+
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+
+<body class="antialiased min-h-screen flex flex-col" x-data="appData()">
+
+    <!-- Header -->
+    <header class="p-6 border-b border-dark-700 glass-panel sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <div
+                    class="w-8 h-8 rounded-lg bg-gradient-to-br from-primary-500 to-purple-600 flex items-center justify-center">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                </div>
+                <h1 class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">
+                    Lead Hunter <span class="text-primary-500">Pro</span></h1>
+            </div>
+            <div class="text-sm text-gray-400">
+                <span class="inline-block w-2 h-2 rounded-full bg-green-500 mr-2 animate-pulse"></span> System Ready
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow p-6">
+        <div class="max-w-7xl mx-auto space-y-8">
+
+            <!-- Search Section -->
+            <section class="glass-panel rounded-2xl p-8 animate-fade-in">
+                <h2 class="text-xl font-semibold mb-6 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z">
+                        </path>
+                    </svg>
+                    Target Configuration
+                </h2>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                        <input x-model="search.api_key" type="password" placeholder="Google Maps Key (AIza...)"
+                            class="w-full bg-dark-800 border border-dark-700 rounded-lg px-4 py-3 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-colors text-white placeholder-gray-600">
+                    </div>
+                    <!-- AI API Key Removed by User Request -->
+                    <div class="hidden">
+                        <input x-model="search.ai_api_key" type="hidden">
+                        <select x-model="search.ai_provider" class="hidden">
+                            <option value="openai"></option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-2">Target Niche</label>
+                        <input x-model="search.niche" type="text" placeholder="e.g. Plumbers"
+                            class="w-full bg-dark-800 border border-dark-700 rounded-lg px-4 py-3 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-colors text-white placeholder-gray-600">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-2">Target Location</label>
+                        <input x-model="search.location" type="text" placeholder="e.g. Austin, TX"
+                            class="w-full bg-dark-800 border border-dark-700 rounded-lg px-4 py-3 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-colors text-white placeholder-gray-600">
+                    </div>
+                </div>
+
+                <!-- Deep Scan Toggle -->
+                <div
+                    class="mt-6 flex items-center justify-between bg-dark-800 p-4 rounded-lg border border-dark-700/50">
+                    <div>
+                        <h3 class="font-medium text-white">Enable Deep Scan Mode 🚀</h3>
+                        <p class="text-sm text-gray-400">Runs 6 parallel searches (North, South, East, West, Downtown)
+                            to ignore the 60-result limit.</p>
+                    </div>
+                    <button @click="search.deep_scan = !search.deep_scan"
+                        class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none"
+                        :class="search.deep_scan ? 'bg-primary-500' : 'bg-gray-700'">
+                        <span
+                            class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
+                            :class="search.deep_scan ? 'translate-x-5' : 'translate-x-0'"></span>
+                    </button>
+                </div>
+
+                <div class="mt-8 flex justify-end">
+                    <button @click="performSearch" :disabled="loading"
+                        class="bg-gradient-to-r from-primary-500 to-indigo-600 hover:from-primary-600 hover:to-indigo-700 text-white font-semibold py-3 px-8 rounded-lg shadow-lg shadow-indigo-500/20 transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
+                        <svg x-show="loading" class="animate-spin -ml-1 mr-2 h-5 w-5 text-white"
+                            xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
+                            </circle>
+                            <path class="opacity-75" fill="currentColor"
+                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                            </path>
+                        </svg>
+                        <span x-text="loading ? 'Scanning Maps...' : 'Start Scan'"></span>
+                    </button>
+                </div>
+            </section>
+
+            <!-- Results Section -->
+            <section x-show="results.length > 0" class="glass-panel rounded-2xl p-8 animate-fade-in"
+                style="display: none;">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-semibold flex items-center gap-2">
+                        <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        Leads Found (<span x-text="results.length"></span>)
+                        <span class="text-sm text-gray-500 font-normal ml-2">
+                            (Scanned <span x-text="scanStats.total"></span> businesses)
+                        </span>
+                    </h2>
+                    <button @click="exportCSV"
+                        class="text-sm text-gray-400 hover:text-white transition-colors flex items-center gap-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                        </svg>
+                        Export CSV
+                    </button>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="text-gray-400 text-sm border-b border-dark-700">
+                                <th class="py-4 px-4 font-normal">Business Name</th>
+                                <th class="py-4 px-4 font-normal">Address</th>
+                                <th class="py-4 px-4 font-normal">Phone</th>
+                                <th class="py-4 px-4 font-normal">Owner Info</th>
+                                <th class="py-4 px-4 font-normal text-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-sm">
+                            <template x-for="(lead, index) in results" :key="index">
+                                <tr class="border-b border-dark-700/50 hover:bg-dark-800/50 transition-colors">
+                                    <td class="py-4 px-4 font-medium text-white" x-text="lead.name"></td>
+                                    <td class="py-4 px-4 text-gray-400" x-text="lead.address"></td>
+                                    <td class="py-4 px-4 text-gray-400" x-text="lead.phone"></td>
+                                    <td class="py-4 px-4">
+                                        <div x-show="lead.owner_name"
+                                            class="p-2 bg-green-500/10 border border-green-500/20 rounded-lg text-green-400 text-xs">
+                                            <div class="font-bold border-b border-green-500/20 pb-1 mb-1"
+                                                x-text="lead.owner_name"></div>
+                                            <div x-text="lead.owner_contact"></div>
+                                        </div>
+                                        <span x-show="!lead.owner_name" class="text-gray-600 italic">Not enriched</span>
+                                    </td>
+                                    <td class="py-4 px-4 text-right flex justify-end gap-2">
+                                        <button @click="enrichLead(index)" :disabled="lead.enriching || lead.owner_name"
+                                            class="inline-flex items-center px-3 py-1.5 rounded-md text-xs font-medium transition-colors border"
+                                            :class="lead.owner_name ? 'bg-transparent text-gray-500 border-transparent cursor-default' : 'bg-dark-800 text-primary-400 border-primary-500/30 hover:bg-primary-500 hover:text-white'">
+                                            <span x-show="lead.enriching" class="animate-spin mr-1">⟳</span>
+                                            <span
+                                                x-text="lead.owner_name ? 'Enriched' : (lead.enriching ? 'Searching...' : 'Find Owner')"></span>
+                                        </button>
+
+                                        <button @click="generateSite(index)"
+                                            class="inline-flex items-center px-3 py-1.5 rounded-md text-xs font-medium transition-colors border hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+                                            :class="lead.generated_url ? 'bg-green-500 text-white border-transparent' : 'bg-gradient-to-r from-purple-500 to-pink-500 text-white border-transparent'">
+                                            <span x-show="lead.generating" class="animate-spin mr-1">⟳</span>
+                                            <span
+                                                x-text="lead.generating ? 'Building...' : (lead.generated_url ? '✅ View Site' : '⚡ Build Site')"></span>
+                                        </button>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <script>
+        function appData() {
+            return {
+                loading: false,
+                search: {
+                    niche: '',
+                    location: '',
+                    api_key: '',
+                    deep_scan: true,
+                    ai_api_key: '',
+                    ai_provider: 'openai'
+                },
+                scanStats: { total: 0 },
+                results: [],
+
+                async performSearch() {
+                    if (!this.search.niche || !this.search.location || !this.search.api_key) {
+                        alert('Please enter API Key, Niche, and Location');
+                        return;
+                    }
+
+                    this.loading = true;
+                    this.results = []; // Clear previous
+
+                    try {
+                        const response = await fetch('/api/search', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(this.search)
+                        });
+
+                        const data = await response.json();
+                        if (data.status === 'success') {
+                            // Add 'enriching' state to each result
+                            this.results = data.results.map(r => ({ ...r, enriching: false, generating: false, generated_url: null }));
+                            this.scanStats.total = data.total_scanned || 0;
+
+                            if (this.results.length === 0) {
+                                alert(`Scanned ${data.total_scanned} businesses, but ALL of them had websites! Try a more specific location or niche.`);
+                            }
+                        } else {
+                            alert("Search Error: " + data.message);
+                        }
+                    } catch (error) {
+                        console.error('Search failed:', error);
+                        alert('Error connecting to server');
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+
+                async enrichLead(index) {
+                    const lead = this.results[index];
+                    lead.enriching = true;
+
+                    try {
+                        const response = await fetch('/api/enrich', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(lead)
+                        });
+
+                        const data = await response.json();
+                        // Update lead with new info
+                        this.results[index].owner_name = data.owner_name;
+                        this.results[index].owner_contact = data.owner_contact;
+
+                    } catch (error) {
+                        console.error('Enrichment failed:', error);
+                    } finally {
+                        lead.enriching = false;
+                    }
+                },
+
+                async generateSite(index) {
+                    const lead = this.results[index];
+                    if (!this.search.ai_api_key) {
+                        alert("Please enter an AI API Key (OpenAI or Gemini) in the top settings first.");
+                        return;
+                    }
+
+                    if (lead.generated_url) {
+                        window.open(lead.generated_url, '_blank');
+                        return;
+                    }
+
+                    lead.generating = true;
+
+                    try {
+                        const response = await fetch('/api/generate-site', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                business_name: lead.name,
+                                niche: this.search.niche,
+                                location: this.search.location,
+                                ai_api_key: this.search.ai_api_key,
+                                provider: this.search.ai_provider
+                            })
+                        });
+
+                        const data = await response.json();
+                        if (data.status === 'success') {
+                            // Save URL to lead object so user can click "View"
+                            this.results[index].generated_url = data.preview_url;
+                            // Optional: Open it anyway, but if blocked, the button safeguards it.
+                            try { window.open(data.preview_url, '_blank'); } catch (e) { }
+                        } else {
+                            alert("Generation Error: " + data.message);
+                        }
+                    } catch (e) {
+                        console.error(e);
+                        alert("Failed to contact server.");
+                    } finally {
+                        lead.generating = false;
+                    }
+                },
+
+                exportCSV() {
+                    if (this.results.length === 0) {
+                        alert("No results to export!");
+                        return;
+                    }
+
+                    // Define headers
+                    const headers = ["Business Name", "Address", "Phone", "Website", "Has Website", "Owner Name", "Owner Contact"];
+
+                    // Convert data to CSV format
+                    const csvRows = [headers.join(",")];
+
+                    this.results.forEach(row => {
+                        const values = [
+                            `"${(row.name || '').replace(/"/g, '""')}"`,
+                            `"${(row.address || '').replace(/"/g, '""')}"`,
+                            `"${(row.phone || '').replace(/"/g, '""')}"`,
+                            `"${(row.website || '').replace(/"/g, '""')}"`,
+                            row.has_website ? "Yes" : "No",
+                            `"${(row.owner_name || '').replace(/"/g, '""')}"`,
+                            `"${(row.owner_contact || '').replace(/"/g, '""')}"`
+                        ];
+                        csvRows.push(values.join(","));
+                    });
+
+                    const csvContent = csvRows.join("\n");
+                    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                    const url = URL.createObjectURL(blob);
+
+                    const link = document.createElement("a");
+                    link.setAttribute("href", url);
+                    link.setAttribute("download", `leads_export_${new Date().toISOString().slice(0, 10)}.csv`);
+                    link.style.visibility = 'hidden';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                }
+            }
+        }
+    </script>
+</body>
+
+</html>

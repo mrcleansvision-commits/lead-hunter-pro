@@ -1,0 +1,11 @@
+fastapi
+uvicorn[standard]
+googlemaps
+gunicorn
+# playwright removed for cloud compatibility
+beautifulsoup4
+httpx
+pydantic
+jinja2
+google-search-results
+googlemaps
